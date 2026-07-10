@@ -53,3 +53,17 @@ def test_is_business_day(db_path):
     assert service.is_business_day(db_path, d("2026-07-10")) is True
     assert service.is_business_day(db_path, d("2026-07-11")) is False  # Saturday
     assert service.is_business_day(db_path, d("2026-03-02")) is False  # substitute holiday
+
+
+def test_uncovered_year_raises(db_path):
+    with pytest.raises(ValueError, match="no holiday data"):
+        service.is_business_day(db_path, d("2010-01-04"))
+    with pytest.raises(ValueError, match="no holiday data"):
+        service.count_business_days(db_path, d("2027-12-20"), d("2028-01-10"))
+    with pytest.raises(ValueError, match="no holiday data"):
+        service.add_business_days(db_path, d("2027-12-30"), 5)  # 결과가 2028로 넘어감
+
+
+def test_covered_boundary_year_passes(db_path):
+    # 커버 마지막 연도 안에서 끝나는 계산은 통과
+    assert service.count_business_days(db_path, d("2027-12-27"), d("2027-12-31")) == 4

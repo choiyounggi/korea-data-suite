@@ -60,3 +60,19 @@ def test_count_reversed_range_returns_422(client):
         "/v1/business-days/count?start=2026-07-11&end=2026-07-10", headers={"X-API-Key": "test-key"}
     )
     assert r.status_code == 422
+
+
+def test_uncovered_year_returns_422_with_coverage(client):
+    r = client.get("/v1/holidays?year=2010", headers={"X-API-Key": "test-key"})
+    assert r.status_code == 422
+    assert "covered years" in r.json()["detail"]
+
+
+def test_check_uncovered_date_returns_422(client):
+    r = client.get("/v1/holidays/check?date=2010-01-04", headers={"X-API-Key": "test-key"})
+    assert r.status_code == 422
+
+
+def test_add_crossing_uncovered_year_returns_422(client):
+    r = client.get("/v1/business-days/add?date=2027-12-30&days=5", headers={"X-API-Key": "test-key"})
+    assert r.status_code == 422

@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from app.apis.holidays.models import Holiday
@@ -17,6 +18,11 @@ CREATE TABLE IF NOT EXISTS holidays (
 )
 """
 
+_UPSERT_SQL = """INSERT INTO holidays (date, name_ko, name_en, type, source)
+   VALUES (?, ?, ?, ?, ?)
+   ON CONFLICT(date, name_ko) DO UPDATE
+   SET name_en = excluded.name_en, type = excluded.type, source = excluded.source"""
+
 
 def _conn(db_path: str) -> sqlite3.Connection:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -26,20 +32,27 @@ def _conn(db_path: str) -> sqlite3.Connection:
 
 
 def init_db(db_path: str) -> None:
-    with _conn(db_path) as conn:
+    with closing(_conn(db_path)) as conn, conn:
         conn.execute(DDL)
 
 
 def upsert_holidays(db_path: str, holidays: list[Holiday], source: str) -> int:
-    with _conn(db_path) as conn:
+    with closing(_conn(db_path)) as conn, conn:
         for h in holidays:
-            conn.execute(
-                """INSERT INTO holidays (date, name_ko, name_en, type, source)
-                   VALUES (?, ?, ?, ?, ?)
-                   ON CONFLICT(date, name_ko) DO UPDATE
-                   SET name_en = excluded.name_en, type = excluded.type, source = excluded.source""",
-                (h.date, h.name_ko, h.name_en, h.type, source),
-            )
+            conn.execute(_UPSERT_SQL, (h.date, h.name_ko, h.name_en, h.type, source))
+    return len(holidays)
+
+
+def replace_year(db_path: str, year: int, holidays: list[Holiday], source: str) -> int:
+    """Atomically replace all rows of a year — the sync source is authoritative.
+
+    Upserting synced rows on top of seed rows would duplicate dates whenever the
+    upstream uses different names (e.g. seed '성탄절' vs KASI '기독탄신일').
+    """
+    with closing(_conn(db_path)) as conn, conn:
+        conn.execute("DELETE FROM holidays WHERE date LIKE ?", (f"{year:04d}-%",))
+        for h in holidays:
+            conn.execute(_UPSERT_SQL, (h.date, h.name_ko, h.name_en, h.type, source))
     return len(holidays)
 
 
@@ -50,7 +63,7 @@ def load_seed(db_path: str) -> int:
 
 def get_holidays(db_path: str, year: int, month: int | None = None) -> list[Holiday]:
     prefix = f"{year:04d}-{month:02d}-%" if month else f"{year:04d}-%"
-    with _conn(db_path) as conn:
+    with closing(_conn(db_path)) as conn:
         rows = conn.execute(
             "SELECT date, name_ko, name_en, type FROM holidays WHERE date LIKE ? ORDER BY date, name_ko",
             (prefix,),
@@ -63,15 +76,21 @@ def holiday_dates(db_path: str, years: list[int]) -> set[str]:
         return set()
     clauses = " OR ".join(["date LIKE ?"] * len(years))
     params = [f"{y:04d}-%" for y in years]
-    with _conn(db_path) as conn:
+    with closing(_conn(db_path)) as conn:
         rows = conn.execute(
             f"SELECT DISTINCT date FROM holidays WHERE {clauses}", params
         ).fetchall()
     return {r["date"] for r in rows}
 
 
+def covered_years(db_path: str) -> set[int]:
+    with closing(_conn(db_path)) as conn:
+        rows = conn.execute("SELECT DISTINCT substr(date, 1, 4) AS y FROM holidays").fetchall()
+    return {int(r["y"]) for r in rows}
+
+
 def names_on(db_path: str, date: str) -> list[str]:
-    with _conn(db_path) as conn:
+    with closing(_conn(db_path)) as conn:
         rows = conn.execute(
             "SELECT name_ko FROM holidays WHERE date = ? ORDER BY name_ko", (date,)
         ).fetchall()

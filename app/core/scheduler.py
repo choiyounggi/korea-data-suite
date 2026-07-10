@@ -20,7 +20,9 @@ def sync_holidays() -> int:
     for year in (today.year, today.year + 1):
         holidays = kasi.fetch_year(year, settings.data_go_kr_key)
         if holidays:
-            total += store.upsert_holidays(settings.db_path, holidays, source="kasi")
+            # upsert가 아니라 연도 교체 — 시드와 KASI의 이름이 다르면(성탄절 vs 기독탄신일)
+            # upsert는 같은 날짜에 중복 행을 만든다. 동기화 소스가 그 연도의 정본.
+            total += store.replace_year(settings.db_path, year, holidays, source="kasi")
     logger.info("KASI sync upserted %s rows", total)
     return total
 

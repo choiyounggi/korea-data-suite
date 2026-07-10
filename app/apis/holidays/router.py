@@ -13,7 +13,14 @@ def list_holidays(
     year: int = Query(ge=2004, le=2100),
     month: int | None = Query(default=None, ge=1, le=12),
 ) -> dict:
-    holidays = store.get_holidays(get_settings().db_path, year, month)
+    db_path = get_settings().db_path
+    covered = store.covered_years(db_path)
+    if year not in covered:
+        raise HTTPException(
+            status_code=422,
+            detail=f"no holiday data for year {year}; covered years: {sorted(covered)}",
+        )
+    holidays = store.get_holidays(db_path, year, month)
     return {
         "year": year,
         "month": month,
@@ -25,12 +32,16 @@ def list_holidays(
 @router.get("/holidays/check")
 def check_date(date: datetime.date) -> dict:
     db_path = get_settings().db_path
+    try:
+        is_business = service.is_business_day(db_path, date)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     names = store.names_on(db_path, date.isoformat())
     return {
         "date": date.isoformat(),
         "weekday": date.strftime("%A").lower(),
         "is_holiday": bool(names),
-        "is_business_day": service.is_business_day(db_path, date),
+        "is_business_day": is_business,
         "names": names,
     }
 
@@ -40,7 +51,10 @@ def business_days_add(
     date: datetime.date,
     days: int = Query(ge=1, le=service.MAX_ADD_DAYS),
 ) -> dict:
-    result = service.add_business_days(get_settings().db_path, date, days)
+    try:
+        result = service.add_business_days(get_settings().db_path, date, days)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"start": date.isoformat(), "days": days, "result": result.isoformat()}
 
 
