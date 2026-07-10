@@ -1,0 +1,12 @@
+# 1) brew install cloudflared
+# 2) cloudflared tunnel login          (브라우저 인증 — 1회)
+# 3) cloudflared tunnel create kds     (credentials json 생성됨)
+# 4) cloudflared tunnel route dns kds api.<your-domain>
+# 5) 이 파일을 ~/.cloudflared/config.yml 로 복사 후 <TUNNEL_ID> 치환
+tunnel: <TUNNEL_ID>
+credentials-file: /Users/choeyeonggi/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: api.<your-domain>
+    service: http://127.0.0.1:8642
+  - service: http_status:404

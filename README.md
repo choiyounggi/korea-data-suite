@@ -60,6 +60,28 @@ Environment variables (prefix `KDS_`, `.env` supported):
   via [Korea Public Data Portal (data.go.kr)](https://www.data.go.kr/) — KOGL Type 1.
   Ships with bundled seed data (2025–2027); refreshed weekly when a service key is configured.
 
+## Run as a daemon (macOS)
+
+```bash
+# Install & start (auto-restart on crash, start at login)
+./scripts/install-daemon.sh
+
+# With Cloudflare Tunnel (after one-time `cloudflared tunnel login/create`)
+./scripts/install-daemon.sh --with-tunnel
+
+# Logs
+tail -f ~/Library/Logs/kds/api.out.log
+
+# Uninstall
+launchctl bootout "gui/$(id -u)" ~/Library/LaunchAgents/com.choiyounggi.kds-api.plist
+rm ~/Library/LaunchAgents/com.choiyounggi.kds-api.plist
+```
+
+To keep the machine awake for serving, disable system sleep
+(`sudo pmset -a sleep 0`) or use a dedicated always-on machine.
+See `deploy/cloudflared.example.yml` for exposing the API via Cloudflare Tunnel
+without opening ports.
+
 ## License
 
 MIT © choiyounggi
