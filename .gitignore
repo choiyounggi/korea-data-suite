@@ -1,0 +1,21 @@
+# local-only plans (AI workflow artifacts stay local)
+docs/plans/
+
+# secrets
+.env
+
+# runtime data
+data/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# macos
+.DS_Store
+
+# logs
+*.log
