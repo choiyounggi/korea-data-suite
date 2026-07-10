@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from app.apis.holidays import store
+from app.apis.holidays.router import router as holidays_router
+from app.core.auth import require_api_key
 from app.core.config import get_settings
 from app.core.scheduler import start_scheduler
 
@@ -28,6 +30,8 @@ app = FastAPI(
     description="Korean public data APIs: holidays, business days, and more.",
     lifespan=lifespan,
 )
+
+app.include_router(holidays_router, dependencies=[Depends(require_api_key)])
 
 
 @app.get("/v1/health", tags=["health"])
