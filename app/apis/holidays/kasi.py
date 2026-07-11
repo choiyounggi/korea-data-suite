@@ -80,7 +80,8 @@ def fetch_year(year: int, service_key: str, retries: int = 3) -> list[Holiday]:
                     continue
                 d = str(it["locdate"])
                 name = str(it["dateName"]).strip()
-                if name in EXCLUDE_NAMES:
+                # 파생 행("대체공휴일(노동절)" 등)까지 제외 — 포함 매칭 (실측: KASI 2027 응답)
+                if any(ex in name for ex in EXCLUDE_NAMES):
                     continue
                 out.append(
                     Holiday(

@@ -61,6 +61,8 @@ def test_fetch_year_excludes_non_public_holidays(monkeypatch):
     items = [
         {"locdate": 20260501, "dateName": "노동절", "isHoliday": "Y"},
         {"locdate": 20260717, "dateName": "제헌절", "isHoliday": "Y"},
+        {"locdate": 20270503, "dateName": "대체공휴일(노동절)", "isHoliday": "Y"},
+        {"locdate": 20270719, "dateName": "대체공휴일(제헌절)", "isHoliday": "Y"},
         {"locdate": 20261009, "dateName": "한글날", "isHoliday": "Y"},
     ]
     monkeypatch.setattr(kasi.httpx, "get", lambda *a, **k: FakeResponse(_payload(items)))
