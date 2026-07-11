@@ -9,7 +9,7 @@ XML responses, legacy auth. This suite normalizes it into simple JSON APIs.
 | API | Status | Description |
 |-----|--------|-------------|
 | Holidays & Business Days | ✅ v1 | Korean public holidays (incl. substitute & temporary holidays) and business-day calculations |
-| Real Estate Transactions | 🚧 planned | Normalized MOLIT real transaction prices |
+| Real Estate Transactions | ✅ v1 | Normalized MOLIT real transaction prices (apartment/officetel/land, sale & rent) |
 | Address Toolkit | 🚧 planned | Road/lot address conversion, romanization |
 | Business Registration | 🚧 planned | BRN validation & enrichment |
 
@@ -41,6 +41,29 @@ Covers official public holidays, **substitute holidays** (대체공휴일),
 **temporary holidays** (임시공휴일), and election days — the cases most
 global holiday APIs get wrong for Korea.
 
+## Real Estate Transactions API
+
+Normalized MOLIT (Ministry of Land) real transaction prices — apartment,
+officetel, and land; sale, jeonse, and monthly-rent — as clean English JSON
+with cursor pagination.
+
+```bash
+# Real transaction prices (apartment sales in Gangnam-gu)
+curl "http://127.0.0.1:8642/v1/realestate/transactions?region=11680&property_type=apartment&trade_type=sale" -H "X-API-Key: <key>"
+
+# Filter by date range + paginate with the returned cursor
+curl "http://127.0.0.1:8642/v1/realestate/transactions?region=11680&date_from=2026-01-01&limit=50&cursor=<next_cursor>" -H "X-API-Key: <key>"
+
+# Region codes (LAWD 5-digit)
+curl "http://127.0.0.1:8642/v1/realestate/regions" -H "X-API-Key: <key>"
+```
+
+Daily sync ingests the current + previous month; use the backfill CLI for history:
+
+```bash
+uv run python scripts/backfill.py --from 2025-01 --to 2025-12 --regions 11680,11650
+```
+
 ## Configuration
 
 Environment variables (prefix `KDS_`, `.env` supported):
@@ -51,14 +74,18 @@ Environment variables (prefix `KDS_`, `.env` supported):
 | `KDS_API_KEYS` | — | Comma-separated accepted API keys |
 | `KDS_PROXY_SECRETS` | — | Comma-separated marketplace proxy secrets |
 | `KDS_DB_PATH` | `data/kds.db` | SQLite path |
-| `KDS_DATA_GO_KR_KEY` | — | data.go.kr service key (optional; enables weekly sync) |
-| `KDS_ENABLE_SCHEDULER` | `true` | Weekly holiday sync scheduler |
+| `KDS_DATA_GO_KR_KEY` | — | data.go.kr service key (optional; enables holiday + real-estate sync) |
+| `KDS_ENABLE_SCHEDULER` | `true` | Holiday (weekly) + real-estate (daily) sync scheduler |
+| `KDS_RE_REGIONS` | all 25 Seoul gu | Comma LAWD codes to sync |
+| `KDS_RE_DATASETS` | all | Comma dataset keys (apt_trade, apt_rent, offi_trade, offi_rent, land_trade) |
 
 ## Data sources & attribution
 
 - Holiday data: KASI Special Day Information (한국천문연구원 특일정보),
   via [Korea Public Data Portal (data.go.kr)](https://www.data.go.kr/) — KOGL Type 1.
   Ships with bundled seed data (2025–2027); refreshed weekly when a service key is configured.
+- Real transaction data: MOLIT 실거래가 공개시스템 (국토교통부),
+  via [Korea Public Data Portal (data.go.kr)](https://www.data.go.kr/) — KOGL Type 1.
 
 ## Run as a daemon (macOS)
 

@@ -122,3 +122,43 @@ def test_fetch_apt_trades_bad_amount_skips_only_that_row(monkeypatch):
     monkeypatch.setattr(molit.httpx, "get", lambda *a, **k: _resp(_xml(items)))
     out = molit.fetch_apt_trades("11680", "2026-07", "key")
     assert [t.traded_on for t in out] == ["2026-07-01", "2026-07-04"]  # 2 good rows survive
+
+
+def test_fetch_apt_rents_jeonse_and_monthly(monkeypatch):
+    items = [
+        {"umdNm": "역삼동", "aptNm": "래미안", "excluUseAr": "84.5", "dealYear": "2026",
+         "dealMonth": "7", "dealDay": "1", "deposit": "50,000", "monthlyRent": "0", "floor": "3"},
+        {"umdNm": "역삼동", "aptNm": "래미안", "excluUseAr": "59.9", "dealYear": "2026",
+         "dealMonth": "7", "dealDay": "2", "deposit": "10,000", "monthlyRent": "150", "floor": "5"},
+    ]
+    monkeypatch.setattr(molit.httpx, "get", lambda *a, **k: _resp(_xml(items)))
+    out = molit.fetch_apt_rents("11680", "2026-07", "key")
+    jeonse = [t for t in out if t.trade_type == "jeonse"][0]
+    monthly = [t for t in out if t.trade_type == "monthly_rent"][0]
+    assert jeonse.deposit_won == 500_000_000 and jeonse.monthly_rent_won is None
+    assert monthly.deposit_won == 100_000_000 and monthly.monthly_rent_won == 1_500_000
+    assert monthly.property_type == "apartment"
+
+
+def test_fetch_offi_trades(monkeypatch):
+    items = [{"umdNm": "삼성동", "offiNm": "오피스타워", "excluUseAr": "30.0", "dealYear": "2026",
+              "dealMonth": "7", "dealDay": "4", "dealAmount": "25,000", "floor": "12"}]
+    monkeypatch.setattr(molit.httpx, "get", lambda *a, **k: _resp(_xml(items)))
+    out = molit.fetch_offi_trades("11680", "2026-07", "key")
+    assert len(out) == 1
+    assert out[0].property_type == "officetel" and out[0].trade_type == "sale"
+    assert out[0].price_won == 250_000_000 and out[0].building_name == "오피스타워"
+
+
+def test_fetch_land_trades(monkeypatch):
+    items = [
+        {"umdNm": "내곡동", "dealYear": "2026", "dealMonth": "7", "dealDay": "5",
+         "dealAmount": "300,000", "dealArea": "250.5"},
+        {"umdNm": "내곡동", "dealYear": "2026", "dealMonth": "7", "dealDay": "6",
+         "dealAmount": "100,000", "dealArea": "80.0", "cdealType": "O"},  # cancelled
+    ]
+    monkeypatch.setattr(molit.httpx, "get", lambda *a, **k: _resp(_xml(items)))
+    out = molit.fetch_land_trades("11680", "2026-07", "key")
+    assert len(out) == 1  # cancelled skipped
+    assert out[0].property_type == "land" and out[0].building_name is None
+    assert out[0].price_won == 3_000_000_000 and out[0].area_m2 == 250.5
