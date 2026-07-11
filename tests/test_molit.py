@@ -162,3 +162,15 @@ def test_fetch_land_trades(monkeypatch):
     assert len(out) == 1  # cancelled skipped
     assert out[0].property_type == "land" and out[0].building_name is None
     assert out[0].price_won == 3_000_000_000 and out[0].area_m2 == 250.5
+
+
+def test_blank_numeric_fields_kept_as_none(monkeypatch):
+    # MOLIT returns "" for absent optional numerics; row must be KEPT with None, not dropped
+    items = [{"sggCd": "11680", "umdNm": "역삼동", "aptNm": "래미안", "excluUseAr": "",
+              "dealYear": "2026", "dealMonth": "7", "dealDay": "1", "dealAmount": "50,000",
+              "floor": "", "buildYear": ""}]
+    monkeypatch.setattr(molit.httpx, "get", lambda *a, **k: _resp(_xml(items)))
+    out = molit.fetch_apt_trades("11680", "2026-07", "key")
+    assert len(out) == 1  # kept, not dropped
+    assert out[0].area_m2 is None and out[0].floor is None and out[0].built_year is None
+    assert out[0].price_won == 500_000_000  # amount still parsed

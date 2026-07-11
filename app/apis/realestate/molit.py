@@ -2,14 +2,27 @@ import logging
 import random
 import time
 import xml.etree.ElementTree as ET
+from typing import Annotated
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
 
 from app.apis.realestate.models import Transaction
 from app.core.logsafe import redact
 
 logger = logging.getLogger(__name__)
+
+
+def _blank_to_none(v):
+    # MOLIT returns "" for absent optional numeric fields (e.g. buildYear); coerce
+    # to None so the row is kept instead of failing int/float parse and being dropped.
+    if isinstance(v, str) and v.strip() == "":
+        return None
+    return v
+
+
+OptInt = Annotated[int | None, BeforeValidator(_blank_to_none)]
+OptFloat = Annotated[float | None, BeforeValidator(_blank_to_none)]
 
 BASE_URLS = {
     "apt_trade": "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade",
@@ -27,13 +40,13 @@ class RawAptTrade(BaseModel):
     sggCd: str
     umdNm: str | None = None
     aptNm: str | None = None
-    excluUseAr: float | None = None  # 전용면적 (live-verified field name; not jeonyongAr)
+    excluUseAr: OptFloat = None  # 전용면적 (live-verified field name; not jeonyongAr)
     dealYear: int
     dealMonth: int
     dealDay: int
     dealAmount: str
-    floor: int | None = None
-    buildYear: int | None = None
+    floor: OptInt = None
+    buildYear: OptInt = None
     cdealType: str | None = None
 
 
@@ -159,14 +172,14 @@ def fetch_apt_trades(
 class RawAptRent(BaseModel):
     umdNm: str | None = None
     aptNm: str | None = None
-    excluUseAr: float | None = None
+    excluUseAr: OptFloat = None
     dealYear: int
     dealMonth: int
     dealDay: int
     deposit: str
     monthlyRent: str
-    floor: int | None = None
-    buildYear: int | None = None
+    floor: OptInt = None
+    buildYear: OptInt = None
 
 
 def _normalize_rent(
@@ -205,13 +218,13 @@ def fetch_apt_rents(
 class RawOffiTrade(BaseModel):
     umdNm: str | None = None
     offiNm: str | None = None
-    excluUseAr: float | None = None
+    excluUseAr: OptFloat = None
     dealYear: int
     dealMonth: int
     dealDay: int
     dealAmount: str
-    floor: int | None = None
-    buildYear: int | None = None
+    floor: OptInt = None
+    buildYear: OptInt = None
     cdealType: str | None = None
 
 
@@ -235,14 +248,14 @@ def _normalize_offi_trade(raw: RawOffiTrade, region_code: str) -> Transaction | 
 class RawOffiRent(BaseModel):
     umdNm: str | None = None
     offiNm: str | None = None
-    excluUseAr: float | None = None
+    excluUseAr: OptFloat = None
     dealYear: int
     dealMonth: int
     dealDay: int
     deposit: str
     monthlyRent: str
-    floor: int | None = None
-    buildYear: int | None = None
+    floor: OptInt = None
+    buildYear: OptInt = None
 
 
 def fetch_offi_trades(
@@ -270,7 +283,7 @@ class RawLandTrade(BaseModel):
     dealMonth: int
     dealDay: int
     dealAmount: str
-    dealArea: float | None = None
+    dealArea: OptFloat = None
     cdealType: str | None = None
 
 
