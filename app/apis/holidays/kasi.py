@@ -9,6 +9,11 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo"
 
+# KASI 특일정보는 관공서 공휴일이 아닌 날도 isHoliday=Y로 표기한다 (실측: 2026 응답).
+# 제헌절: 2008년부터 공휴일 아님. 노동절: 근로자 유급휴일이지만 관공서 공휴일 아님.
+# 이 API의 계약은 "관공서 공휴일 기준 public holiday"이므로 인제스트에서 제외한다.
+EXCLUDE_NAMES = frozenset({"노동절", "제헌절"})
+
 NAME_EN = {
     "1월1일": "New Year's Day",
     "신정": "New Year's Day",
@@ -75,6 +80,8 @@ def fetch_year(year: int, service_key: str, retries: int = 3) -> list[Holiday]:
                     continue
                 d = str(it["locdate"])
                 name = str(it["dateName"]).strip()
+                if name in EXCLUDE_NAMES:
+                    continue
                 out.append(
                     Holiday(
                         date=f"{d[0:4]}-{d[4:6]}-{d[6:8]}",

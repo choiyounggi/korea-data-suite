@@ -54,3 +54,16 @@ def test_fetch_year_retries_then_empty(monkeypatch):
     monkeypatch.setattr(kasi.time, "sleep", lambda s: None)
     assert kasi.fetch_year(2026, "dummy-key") == []
     assert calls["n"] == 3
+
+
+def test_fetch_year_excludes_non_public_holidays(monkeypatch):
+    # KASI는 노동절·제헌절도 isHoliday=Y로 주지만 관공서 공휴일이 아니므로 제외 (실측 2026)
+    items = [
+        {"locdate": 20260501, "dateName": "노동절", "isHoliday": "Y"},
+        {"locdate": 20260717, "dateName": "제헌절", "isHoliday": "Y"},
+        {"locdate": 20261009, "dateName": "한글날", "isHoliday": "Y"},
+    ]
+    monkeypatch.setattr(kasi.httpx, "get", lambda *a, **k: FakeResponse(_payload(items)))
+    out = kasi.fetch_year(2026, "dummy-key")
+    assert [h.name_ko for h in out] == ["한글날"]
+    assert kasi.EXCLUDE_NAMES == frozenset({"노동절", "제헌절"})
