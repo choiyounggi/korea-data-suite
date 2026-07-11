@@ -15,6 +15,10 @@ from app.apis.realestate.sync import sync_realestate  # noqa: E402
 from app.core.scheduler import sync_holidays  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+# httpx/httpcore log the full request URL at INFO — and MOLIT/KASI URLs carry the
+# serviceKey. Keep them at WARNING so the key never reaches the log file.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger("kds.sync")
 
 
