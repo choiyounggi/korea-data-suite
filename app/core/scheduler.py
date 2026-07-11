@@ -5,6 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.apis.holidays import kasi, store
+from app.apis.realestate.sync import sync_realestate
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,13 @@ def start_scheduler() -> BackgroundScheduler:
         sync_holidays,
         id="kasi-initial-sync",
         next_run_time=datetime.datetime.now(),
+        max_instances=1,
+        coalesce=True,
+    )
+    scheduler.add_job(
+        sync_realestate,
+        CronTrigger(hour=4, minute=0, timezone="Asia/Seoul"),
+        id="molit-daily-sync",
         max_instances=1,
         coalesce=True,
     )

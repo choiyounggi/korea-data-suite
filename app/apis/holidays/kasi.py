@@ -4,6 +4,7 @@ import time
 import httpx
 
 from app.apis.holidays.models import Holiday
+from app.core.logsafe import redact
 
 logger = logging.getLogger(__name__)
 
@@ -96,5 +97,8 @@ def fetch_year(year: int, service_key: str, retries: int = 3) -> list[Holiday]:
             last_error = exc
             if attempt < retries:
                 time.sleep(2**attempt)
-    logger.warning("KASI sync failed for year=%s after %s attempts: %s", year, retries, last_error)
+    logger.warning(
+        "KASI sync failed for year=%s after %s attempts: %s",
+        year, retries, redact(str(last_error)),
+    )
     return []
