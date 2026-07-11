@@ -1,9 +1,9 @@
 import logging
-import sqlite3
 from contextlib import closing
-from pathlib import Path
 
 from app.apis.realestate.models import Transaction
+from app.core.db import connect as _conn
+from app.core.db import enable_wal
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +41,8 @@ _SELECT_COLS = (
 )
 
 
-def _conn(db_path: str) -> sqlite3.Connection:
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
 def init_db(db_path: str) -> None:
+    enable_wal(db_path)
     with closing(_conn(db_path)) as conn, conn:
         conn.execute(DDL_TABLE)
         conn.execute(DDL_INDEX)

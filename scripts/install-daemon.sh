@@ -19,7 +19,8 @@ install_agent() {
     echo "installed: $name"
 }
 
-install_agent "com.choiyounggi.kds-api"
+install_agent "com.choiyounggi.kds-api"     # read-only API (multi-worker)
+install_agent "com.choiyounggi.kds-sync"    # daily writer (04:00), separate process
 
 if [[ "${1:-}" == "--with-tunnel" ]]; then
     if [[ ! -x /opt/homebrew/bin/cloudflared ]]; then

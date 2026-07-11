@@ -109,6 +109,24 @@ To keep the machine awake for serving, disable system sleep
 See `deploy/cloudflared.example.yml` for exposing the API via Cloudflare Tunnel
 without opening ports.
 
+### Handling concurrent traffic
+
+The read path and the write path are separated so traffic scales independently:
+
+- **SQLite in WAL mode** (set once at init) + `busy_timeout` — readers never block
+  the daily writer and vice-versa, and multiple read workers can run concurrently.
+- **API process is read-only, multi-worker.** `scripts/run.sh` runs uvicorn with
+  `--workers ${KDS_WORKERS:-2}` and `KDS_ENABLE_SCHEDULER=false`. Each worker is a
+  separate process (separate GIL); WAL lets them all read at once. Raise
+  `KDS_WORKERS` to scale reads with cores.
+- **The daily ingest runs as its own process** (`com.choiyounggi.kds-sync`,
+  04:00) via `scripts/sync.py` — never inside the API server, so a multi-thousand-row
+  batch never competes with request handling for the GIL.
+- **Edge caching** (optional): responses carry `Cache-Control: no-store` for
+  security. The real-estate data is public and changes at most daily — if origin
+  load grows, serve it with a short `Cache-Control: public, max-age=...` and let
+  the CDN absorb reads.
+
 ### Security checklist before exposing externally
 
 The app is hardened at the code layer (API-key auth fail-closed, parameterized

@@ -1,9 +1,10 @@
 import json
-import sqlite3
 from contextlib import closing
 from pathlib import Path
 
 from app.apis.holidays.models import Holiday
+from app.core.db import connect as _conn
+from app.core.db import enable_wal
 
 SEED_PATH = Path(__file__).parent / "seed.json"
 
@@ -24,14 +25,8 @@ _UPSERT_SQL = """INSERT INTO holidays (date, name_ko, name_en, type, source)
    SET name_en = excluded.name_en, type = excluded.type, source = excluded.source"""
 
 
-def _conn(db_path: str) -> sqlite3.Connection:
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
 def init_db(db_path: str) -> None:
+    enable_wal(db_path)
     with closing(_conn(db_path)) as conn, conn:
         conn.execute(DDL)
 
