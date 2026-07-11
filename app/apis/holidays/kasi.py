@@ -7,7 +7,7 @@ from app.apis.holidays.models import Holiday
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo"
+BASE_URL = "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo"
 
 NAME_EN = {
     "1월1일": "New Year's Day",

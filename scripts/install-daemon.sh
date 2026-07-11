@@ -11,7 +11,9 @@ install_agent() {
     local name="$1"
     local src="$REPO_DIR/deploy/$name.plist"
     local dst="$AGENTS_DIR/$name.plist"
-    cp "$src" "$dst"
+    # deploy 템플릿의 절대경로를 현재 머신의 레포/홈 경로로 치환 (계정명이 달라도 동작)
+    sed -e "s|/Users/choeyeonggi/korea-data-suite|$REPO_DIR|g" \
+        -e "s|/Users/choeyeonggi|$HOME|g" "$src" > "$dst"
     launchctl bootout "gui/$UID_NUM" "$dst" 2>/dev/null || true
     launchctl bootstrap "gui/$UID_NUM" "$dst"
     echo "installed: $name"
