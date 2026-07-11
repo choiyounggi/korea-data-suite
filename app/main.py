@@ -4,6 +4,7 @@ from fastapi import Depends, FastAPI
 
 from app.apis.holidays import store
 from app.apis.holidays.router import router as holidays_router
+from app.apis.realestate import store as re_store
 from app.apis.realestate.router import router as realestate_router
 from app.core.auth import require_api_key
 from app.core.config import get_settings
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     store.init_db(settings.db_path)
     store.load_seed(settings.db_path)
+    re_store.init_db(settings.db_path)  # so the realestate API works before the first sync
     scheduler = None
     if settings.enable_scheduler:
         scheduler = start_scheduler()

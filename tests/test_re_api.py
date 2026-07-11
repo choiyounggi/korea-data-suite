@@ -99,3 +99,10 @@ def test_oversized_cursor_returns_400(re_client):
 def test_impossible_date_returns_422(re_client):
     r = re_client.get("/v1/realestate/transactions?region=11680&date_from=2026-13-99", headers=H)
     assert r.status_code == 422  # date type rejects impossible dates
+
+
+def test_realestate_api_works_before_any_sync(client):
+    # lifespan must create the table so the API returns empty (200), not 500
+    r = client.get("/v1/realestate/transactions?region=11680", headers=H)
+    assert r.status_code == 200
+    assert r.json()["data"] == []
