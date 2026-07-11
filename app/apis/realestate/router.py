@@ -30,13 +30,13 @@ def _decode_cursor(cursor: str) -> tuple[str, int]:
 
 @router.get("/transactions")
 def list_transactions(
-    region: str,
+    region: str = Query(pattern=r"^\d{5}$"),  # LAWD code: exactly 5 digits (rejects injection/oversize/unicode)
     property_type: str | None = Query(default=None, pattern="^(apartment|officetel|land)$"),
     trade_type: str | None = Query(default=None, pattern="^(sale|jeonse|monthly_rent)$"),
     date_from: datetime.date | None = None,
     date_to: datetime.date | None = None,
     limit: int = Query(default=50, ge=1),
-    cursor: str | None = None,
+    cursor: str | None = Query(default=None, max_length=64),  # base64 of "YYYY-MM-DD:id" ~24 chars
 ) -> dict:
     if not regions.is_valid_region(region):
         raise HTTPException(

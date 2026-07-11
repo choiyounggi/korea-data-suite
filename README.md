@@ -109,6 +109,22 @@ To keep the machine awake for serving, disable system sleep
 See `deploy/cloudflared.example.yml` for exposing the API via Cloudflare Tunnel
 without opening ports.
 
+### Security checklist before exposing externally
+
+The app is hardened at the code layer (API-key auth fail-closed, parameterized
+SQL, strict input validation, security headers on every response including 5xx,
+docs/schema off by default, sanitized errors). The following are **edge/deploy
+responsibilities** that must be in place before opening the tunnel:
+
+- **Never set `KDS_DEV_MODE=true` in production** — it disables all auth. The
+  app logs a warning at startup if it is on.
+- **Cloudflare rate limiting + WAF** on the tunnel hostname — the app has no
+  app-layer rate limit by design (edge responsibility).
+- **HSTS + TLS** are terminated at the Cloudflare edge; confirm HSTS is enabled
+  there (the origin serves plain HTTP on `127.0.0.1` only).
+- Keep `KDS_ENABLE_DOCS` unset (or `false`) in production; set `true` only to
+  serve `/docs` `/openapi.json` at the origin.
+
 ## License
 
 MIT © choiyounggi

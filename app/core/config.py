@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     db_path: str = "data/kds.db"
     data_go_kr_key: str = ""
     enable_scheduler: bool = True
+    enable_docs: bool = False  # secure-by-default: no /docs /redoc /openapi.json at the origin
 
     @property
     def allowed_keys(self) -> frozenset[str]:

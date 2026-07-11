@@ -30,6 +30,9 @@ def is_business_day(db_path: str, day: datetime.date) -> bool:
 def add_business_days(db_path: str, start: datetime.date, days: int) -> datetime.date:
     if days < 1 or days > MAX_ADD_DAYS:
         raise ValueError(f"days must be between 1 and {MAX_ADD_DAYS}")
+    # fail fast before the loop: rejects uncovered/absurd start years (e.g. 9999)
+    # up front so day-by-day addition can never overflow past date.max into a 500
+    _ensure_coverage(db_path, start.year, start.year)
     holidays = _holiday_set(db_path, start.year, start.year + (days // 200) + 1)
     current = start
     remaining = days
