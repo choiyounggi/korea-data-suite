@@ -22,10 +22,10 @@ def _resp(text: str, status: int = 200) -> httpx.Response:
 
 def test_fetch_apt_trades_parses(monkeypatch):
     items = [
-        {"sggCd": "11680", "umdNm": "역삼동", "aptNm": "래미안", "jeonyongAr": "84.5",
+        {"sggCd": "11680", "umdNm": "역삼동", "aptNm": "래미안", "excluUseAr": "84.5",
          "dealYear": "2026", "dealMonth": "7", "dealDay": "1", "dealAmount": "82,500",
          "floor": "10", "buildYear": "2015"},
-        {"sggCd": "11680", "umdNm": "삼성동", "aptNm": "아이파크", "jeonyongAr": "120.0",
+        {"sggCd": "11680", "umdNm": "삼성동", "aptNm": "아이파크", "excluUseAr": "120.0",
          "dealYear": "2026", "dealMonth": "7", "dealDay": "3", "dealAmount": "150,000",
          "floor": "20", "buildYear": "2018"},
     ]

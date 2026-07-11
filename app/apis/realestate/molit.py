@@ -27,7 +27,7 @@ class RawAptTrade(BaseModel):
     sggCd: str
     umdNm: str | None = None
     aptNm: str | None = None
-    jeonyongAr: float | None = None
+    excluUseAr: float | None = None  # 전용면적 (live-verified field name; not jeonyongAr)
     dealYear: int
     dealMonth: int
     dealDay: int
@@ -87,7 +87,7 @@ def _normalize_apt_trade(raw: RawAptTrade, region_code: str) -> Transaction | No
         building_name=raw.aptNm,
         traded_on=f"{raw.dealYear:04d}-{raw.dealMonth:02d}-{raw.dealDay:02d}",
         price_won=_parse_amount_manwon(raw.dealAmount),
-        area_m2=raw.jeonyongAr,
+        area_m2=raw.excluUseAr,
         floor=raw.floor,
         built_year=raw.buildYear,
     )
