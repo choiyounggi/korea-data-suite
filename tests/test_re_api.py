@@ -82,10 +82,16 @@ def test_unknown_region_422(re_client):
 
 
 def test_regions_endpoint(re_client):
+    from app.apis.realestate import regions
+
     body = re_client.get("/v1/realestate/regions", headers=H).json()
-    assert body["count"] == 25
+    assert body["count"] == len(regions.REGIONS)
+    assert body["count"] >= 200  # nationwide coverage, not Seoul-only
     gangnam = [x for x in body["regions"] if x["code"] == "11680"][0]
-    assert gangnam["name_en"] == "Gangnam-gu"
+    assert gangnam["name_en"] == "Seoul Gangnam-gu"
+    # a non-Seoul sigungu is present (nationwide, disambiguated by sido)
+    haeundae = [x for x in body["regions"] if x["code"] == "26350"][0]
+    assert haeundae["name_ko"] == "부산광역시 해운대구"
 
 
 def test_oversized_cursor_returns_400(re_client):
