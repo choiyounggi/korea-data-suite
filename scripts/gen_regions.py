@@ -49,6 +49,13 @@ SIDO_EN = {
 }
 SUFFIX_EN = {"시": "-si", "군": "-gun", "구": "-gu"}
 
+# The 법정동코드 registry still lists 강원도(42)/전라북도(45), but after their
+# 특별자치도 conversions the MOLIT real-estate service serves data only under the
+# new sido codes 강원특별자치도(51)/전북특별자치도(52). Verified live: 42xxx/45xxx
+# return zero rows across all datasets/years; 51xxx/52xxx return the data.
+REMAP_SIDO = {"42": "51", "45": "52"}
+RENAME_SIDO = {"강원도": "강원특별자치도", "전라북도": "전북특별자치도"}
+
 
 def rom(word: str) -> str:
     s = _t.translit(word).replace("-", "").strip()
@@ -74,7 +81,12 @@ def main(csv_path: str) -> None:
                 continue
             if code10[5:] != "00000" or code10[2:5] == "000":
                 continue
-            rows.append((code10[:5], name))
+            code5 = code10[:5]
+            if code5[:2] in REMAP_SIDO:  # 강원/전북 자치도 전환 코드로 remap
+                code5 = REMAP_SIDO[code5[:2]] + code5[2:]
+                for old, new in RENAME_SIDO.items():
+                    name = name.replace(old, new, 1)
+            rows.append((code5, name))
     rows.sort()
 
     print("REGIONS: dict[str, dict[str, str]] = {")
