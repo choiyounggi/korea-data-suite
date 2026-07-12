@@ -9,7 +9,7 @@ XML responses, legacy auth. This suite normalizes it into simple JSON APIs.
 | API | Status | Description |
 |-----|--------|-------------|
 | Holidays & Business Days | ✅ v1 | Korean public holidays (incl. substitute & temporary holidays) and business-day calculations |
-| Real Estate Transactions | ✅ v1 | Normalized MOLIT real transaction prices (apartment/officetel/land, sale & rent) |
+| Real Estate Transactions | ✅ v1 | Normalized MOLIT real transaction prices (apartment/officetel/land, sale & rent) — nationwide (261 sigungu) |
 | Address Toolkit | 🚧 planned | Road/lot address conversion, romanization |
 | Business Registration | 🚧 planned | BRN validation & enrichment |
 
@@ -76,7 +76,7 @@ Environment variables (prefix `KDS_`, `.env` supported):
 | `KDS_DB_PATH` | `data/kds.db` | SQLite path |
 | `KDS_DATA_GO_KR_KEY` | — | data.go.kr service key (optional; enables holiday + real-estate sync) |
 | `KDS_ENABLE_SCHEDULER` | `true` | Holiday (weekly) + real-estate (daily) sync scheduler |
-| `KDS_RE_REGIONS` | all 25 Seoul gu | Comma LAWD codes to sync |
+| `KDS_RE_REGIONS` | all 261 nationwide sigungu | Comma LAWD codes to sync (subset override) |
 | `KDS_RE_DATASETS` | all | Comma dataset keys (apt_trade, apt_rent, offi_trade, offi_rent, land_trade) |
 
 ## Data sources & attribution
