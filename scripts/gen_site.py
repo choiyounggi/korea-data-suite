@@ -112,6 +112,46 @@ def aggregate_region(conn, code: str) -> dict | None:
         reverse=True,
     )[:10]
 
+    # monthly median-price trend (last 12 months that have data)
+    by_month: dict[str, list[int]] = {}
+    for r in sales:
+        if r["price_won"]:
+            by_month.setdefault(r["traded_on"][:7], []).append(r["price_won"])
+    months = sorted(by_month)
+    trend = [{"ym": m, "median": median(by_month[m]), "count": len(by_month[m])}
+             for m in months[-12:]]
+
+    def _pct(cur, prev):
+        return round((cur - prev) / prev * 100, 1) if prev else None
+
+    mom = _pct(trend[-1]["median"], trend[-2]["median"]) if len(trend) >= 2 else None
+    yoy = None
+    if trend:
+        latest = trend[-1]["ym"]
+        prior = f"{int(latest[:4]) - 1}-{latest[5:7]}"  # same month, prior year
+        if prior in by_month:
+            yoy = _pct(trend[-1]["median"], median(by_month[prior]))
+
+    # area-tier distribution (Korean 전용면적 buckets)
+    _tiers = [("소형 (~60㎡)", 0, 60), ("중형 (60~85㎡)", 60, 85),
+              ("중대형 (85~135㎡)", 85, 135), ("대형 (135㎡~)", 135, 1e9)]
+    tiers = []
+    for label, lo, hi in _tiers:
+        ps = [r["price_won"] for r in sales
+              if r["area_m2"] and lo <= r["area_m2"] < hi and r["price_won"]]
+        if ps:
+            tiers.append({"label": label, "count": len(ps), "median": median(ps)})
+
+    # most-traded apartment buildings
+    by_bldg: dict[str, list[int]] = {}
+    for r in sales:
+        if r["building_name"] and r["price_won"]:
+            by_bldg.setdefault(r["building_name"], []).append(r["price_won"])
+    buildings = sorted(
+        ({"name": b, "count": len(v), "median": median(v)} for b, v in by_bldg.items()),
+        key=lambda x: x["count"], reverse=True,
+    )[:8]
+
     dates = [r["traded_on"] for r in sales]
     return {
         "code": code,
@@ -127,6 +167,11 @@ def aggregate_region(conn, code: str) -> dict | None:
         "date_max": max(dates),
         "recent": sales[:RECENT_SAMPLE],
         "hoods": hoods,
+        "trend": trend,
+        "mom": mom,
+        "yoy": yoy,
+        "tiers": tiers,
+        "buildings": buildings,
     }
 
 
@@ -156,7 +201,35 @@ code{font-family:"SF Mono",Menlo,Consolas,monospace}
 .card{border:1px solid var(--line);border-radius:10px;padding:14px}.card .c{color:var(--muted);font-size:13px}
 footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:56px;padding-top:24px;padding-bottom:48px}
 .faq h3{font-size:16px;margin:18px 0 4px}.faq p{margin:0 0 8px;color:var(--muted)}
+.chg{color:var(--muted);font-size:14px;margin:-4px 0 12px}
+.chg .up{color:#c0392b;font-weight:600}.chg .down{color:#1e6fdb;font-weight:600}
+svg.chart{max-width:100%;height:auto;display:block}
 """
+
+
+def _svg_bars(trend: list[dict]) -> str:
+    """Inline responsive SVG bar chart of monthly median sale price (no JS/deps)."""
+    if not trend:
+        return ""
+    W, H, pad_t, pad_b = 760, 200, 14, 26
+    vmax = max((t["median"] or 0) for t in trend) or 1
+    n = len(trend)
+    bw = (W - 8) / n
+    parts = []
+    for i, t in enumerate(trend):
+        v = t["median"] or 0
+        bh = (H - pad_t - pad_b) * (v / vmax)
+        x = 4 + i * bw
+        y = H - pad_b - bh
+        parts.append(
+            f'<rect x="{x + bw * 0.16:.1f}" y="{y:.1f}" width="{bw * 0.68:.1f}" '
+            f'height="{bh:.1f}" rx="2" fill="#2b6cff">'
+            f'<title>{esc(t["ym"])}: {won_short(t["median"])}원 ({t["count"]}건)</title></rect>'
+            f'<text x="{x + bw * 0.5:.1f}" y="{H - pad_b + 15:.1f}" font-size="10" '
+            f'text-anchor="middle" fill="#5c6470">{esc(t["ym"][5:7])}월</text>'
+        )
+    return (f'<svg class="chart" viewBox="0 0 {W} {H}" width="100%" role="img" '
+            f'aria-label="월별 중위 매매가 추이">{"".join(parts)}</svg>')
 
 
 def page(title: str, desc: str, canonical: str, body: str, jsonld: list[str]) -> str:
@@ -261,22 +334,57 @@ def render_region(agg: dict) -> str:
         (f"{ko}의 지역 코드(LAWD)는 무엇인가요?",
          f"{ko}의 법정동 시군구 코드는 {agg['code']}입니다. 이 5자리 코드를 region 파라미터로 사용합니다."),
     ]
+    # price-trend chart + MoM/YoY change caption
+    chart = _svg_bars(agg["trend"])
+
+    def _chg(pct, label):
+        if pct is None:
+            return ""
+        cls = "up" if pct >= 0 else "down"
+        return f'{label} <span class="{cls}">{"+" if pct >= 0 else ""}{pct}%</span>'
+
+    chg = " · ".join(x for x in (_chg(agg["mom"], "전월 대비"), _chg(agg["yoy"], "전년 동월 대비")) if x)
+    trend_section = (
+        f'<h2>{esc(ko)} 아파트 매매가 추이 (월별 중위가)</h2>'
+        f'<p class="chg">{chg}</p>{chart}' if agg["trend"] else ""
+    )
+    tier_rows = "".join(
+        f"<tr><td>{esc(t['label'])}</td><td class='num'>{t['count']:,}건</td>"
+        f"<td class='num'>{won_short(t['median'])}원</td></tr>" for t in agg["tiers"]
+    )
+    tier_section = (
+        '<h2>면적대별 매매가</h2><div class="wrap"><table>'
+        '<thead><tr><th>전용면적</th><th class="num">거래 건수</th><th class="num">중위 매매가</th></tr></thead>'
+        f'<tbody>{tier_rows}</tbody></table></div>' if agg["tiers"] else ""
+    )
+    bldg_rows = "".join(
+        f"<tr><td>{esc(b['name'])}</td><td class='num'>{b['count']:,}건</td>"
+        f"<td class='num'>{won_short(b['median'])}원</td></tr>" for b in agg["buildings"]
+    )
+    bldg_section = (
+        f'<h2>{esc(ko)} 거래 많은 아파트 단지</h2><div class="wrap"><table>'
+        '<thead><tr><th>단지</th><th class="num">거래 건수</th><th class="num">중위 매매가</th></tr></thead>'
+        f'<tbody>{bldg_rows}</tbody></table></div>' if agg["buildings"] else ""
+    )
     body = f"""
 <nav style="font-size:13px;color:#5c6470;margin-top:20px"><a href="{esc(SITE_URL)}/">홈</a> › <a href="{esc(SITE_URL)}/#realestate">실거래가 API</a> › {esc(ko)}</nav>
 <h1>{esc(ko)} 아파트 실거래가 API</h1>
 <p class="lede">{esc(ko)}(코드 {agg['code']})의 아파트 매매·전세 실거래 데이터를 정규화된 JSON REST API로 조회하세요.
 최근 매매 {agg['sale_count']:,}건 · 전세 {agg['jeonse_count']:,}건.</p>
 <div class="stats">{stats}</div>
+{trend_section}
 
 <h2>{esc(ko)} 최근 아파트 매매 실거래</h2>
 <div class="wrap"><table>
 <thead><tr><th>동</th><th>단지</th><th class="num">전용면적</th><th class="num">층</th><th class="num">거래가</th><th class="num">거래일</th></tr></thead>
 <tbody>{recent}</tbody></table></div>
+{tier_section}
 
 <h2>동별 매매 현황</h2>
 <div class="wrap"><table>
 <thead><tr><th>법정동</th><th class="num">거래 건수</th><th class="num">중위 매매가</th></tr></thead>
 <tbody>{hoods}</tbody></table></div>
+{bldg_section}
 
 <h2>API로 받는 법</h2>
 <p>위 데이터 전체를 아래 한 번의 호출로 받을 수 있습니다. 응답은 영문 키의 깔끔한 JSON입니다.</p>

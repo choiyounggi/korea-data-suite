@@ -78,6 +78,8 @@ def test_gate_passes_and_aggregates(tmp_path):
     assert agg["sale_count"] == 40
     assert agg["median_price"] == 2_000_000_000
     assert agg["code"] == GANGNAM
+    assert len(agg["trend"]) >= 1          # monthly trend computed
+    assert agg["tiers"] and agg["buildings"]  # area tiers + popular buildings
 
 
 # ── rendered page carries SEO essentials ──
@@ -106,6 +108,9 @@ def test_region_page_has_seo_essentials(tmp_path, monkeypatch):
     assert '"@type": "Dataset"' in html
     assert '"@type": "FAQPage"' in html
     assert "40건" in html  # real count surfaced, not a placeholder
+    assert "<svg" in html and "매매가 추이" in html  # trend chart
+    assert "면적대별" in html                          # area-tier section
+    assert "거래 많은 아파트 단지" in html              # popular buildings section
 
 
 # ── build(): sitemap excludes skipped regions ──
