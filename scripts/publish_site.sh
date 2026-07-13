@@ -11,6 +11,10 @@
 #   KDS_SITE_DIR     output dir (default site/dist; must match the app's KDS_SITE_DIR)
 set -euo pipefail
 
+# uv (and other user-installed CLIs) live in ~/.local/bin, which launchd and
+# non-interactive SSH do NOT put on PATH — add it so `uv` resolves in both.
+export PATH="$HOME/.local/bin:$PATH"
+
 cd "$(dirname "$0")/.."
 
 if [ -f deploy/site.env ]; then
