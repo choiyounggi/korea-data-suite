@@ -143,6 +143,67 @@ responsibilities** that must be in place before opening the tunnel:
 - Keep `KDS_ENABLE_DOCS` unset (or `false`) in production; set `true` only to
   serve `/docs` `/openapi.json` at the origin.
 
+## SEO marketing site (programmatic)
+
+A static, SEO-optimized marketing site is generated **from the live DB** by
+`scripts/gen_site.py`. For every region that has real transaction data it emits a
+Korean landing page (the query users actually type — "강남구 아파트 실거래가 API" — backed
+by real MOLIT stats, a working `curl` example, and a signup CTA), plus a holidays
+pillar page, a home page, `sitemap.xml`, and `robots.txt`.
+
+**Quality gate (important):** a region is only published if it has at least
+`MIN_SALE_ROWS` (30) apartment-sale rows. Regions without enough data are skipped —
+this deliberately avoids thin/doorway pages, which search engines penalize.
+
+```bash
+# generate into site/dist (reads data/kds.db)
+uv run python scripts/gen_site.py --out site/dist
+```
+
+Config is env-driven so the same generator works for any domain (put these in
+`deploy/site.env`, gitignored — copy `deploy/site.env.example`):
+
+| Env | Meaning |
+|-----|---------|
+| `KDS_SITE_URL` | canonical/sitemap base, e.g. `https://data.yourdomain.com` |
+| `KDS_API_ORIGIN` | origin shown in the on-page `curl` examples, e.g. `https://api.yourdomain.com` |
+| `KDS_CTA_URL` | signup call-to-action (RapidAPI / Zyla / Postman listing) |
+| `KDS_PAGES_PROJECT` | Cloudflare Pages project name (default `kds-site`) |
+
+### Deploy (Cloudflare Pages)
+
+Hosting on Cloudflare **Pages** (not the API tunnel) keeps the site always-on at
+the CDN edge — it stays up even when this machine sleeps, which the tunnel-served
+API does not. The daily publish job just runs on the machine; CF hosts the result.
+
+```bash
+# one-time
+cp deploy/site.env.example deploy/site.env   # then fill in your domain + CTA
+wrangler login                                # browser auth, once
+wrangler pages project create kds-site        # or reuse an existing project
+
+# regenerate from the current DB + deploy
+scripts/publish_site.sh
+```
+
+Then point your domain/subdomain at the Pages project in the Cloudflare dashboard,
+and submit `https://<your-site>/sitemap.xml` once in Google Search Console.
+
+> First run needs history: the daily sync only ingests the current month. To give
+> pages real depth, backfill once —
+> `uv run python scripts/backfill.py --from 2025-07 --to 2026-06 --regions <codes> --datasets apt_trade,apt_rent`.
+
+### Automate (macOS daemon)
+
+`deploy/com.choiyounggi.kds-site.plist` rebuilds + redeploys the site daily at
+04:30 (right after the 04:00 sync), so pages track the freshest data hands-off:
+
+```bash
+cp deploy/com.choiyounggi.kds-site.plist ~/Library/LaunchAgents/
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.choiyounggi.kds-site.plist
+tail -f ~/Library/Logs/kds/site.out.log
+```
+
 ## License
 
 MIT © choiyounggi

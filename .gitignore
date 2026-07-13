@@ -3,6 +3,10 @@ docs/plans/
 
 # secrets
 .env
+deploy/site.env
+
+# generated SEO site (rebuilt from the DB by scripts/gen_site.py)
+site/dist/
 
 # runtime data
 data/
@@ -19,3 +23,6 @@ __pycache__/
 
 # logs
 *.log
+
+# local agent scratch
+.claude/
