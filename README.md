@@ -179,19 +179,22 @@ HTML-renderable CSP (`script-src 'none'`, inline styles allowed) + `public` cach
 Files are read from disk per request, so **regenerating the site goes live with no
 app restart** — only a code change needs a restart.
 
-One-time on the serving host:
+The site is served on the **same host as the API** (`api.korea-data.cloud`) — the
+API lives under `/v1`, the site everywhere else — so no new tunnel hostname or DNS
+is needed. One-time on the serving host:
 
 ```bash
-cp deploy/site.env.example deploy/site.env    # fill in domain + CTA
+cp deploy/site.env.example deploy/site.env    # KDS_SITE_URL == KDS_API_ORIGIN == https://api.korea-data.cloud
 uv run python scripts/gen_site.py --out site/dist   # generate once
-# restart the API app so this integration (new code) takes effect
-# route the root domain to the same app in your Cloudflare Tunnel ingress, e.g.:
-#   - hostname: korea-data.cloud
-#     service: http://127.0.0.1:8642      # same app that serves api.korea-data.cloud
-# then `cloudflared tunnel route dns <tunnel> korea-data.cloud`
+# restart the API app so this integration (new code) takes effect — the site is
+# then live at https://api.korea-data.cloud/ , /holidays/ , /realestate/... .
 ```
 
-Submit `https://korea-data.cloud/sitemap.xml` once in Google Search Console.
+Submit `https://api.korea-data.cloud/sitemap.xml` once in Google Search Console.
+
+> Want the site on a bare `korea-data.cloud` / `www` later? Add an ingress rule
+> pointing that hostname at the same `http://127.0.0.1:8642`, route its DNS, and
+> switch `KDS_SITE_URL` to it. Not required — the api host works for SEO today.
 
 > First run needs history: the daily sync only ingests the current month. To give
 > pages real depth, backfill once —
