@@ -217,6 +217,49 @@ tail -f ~/Library/Logs/kds/site.out.log
 > already requires). If always-on hosting is wanted later, the same `site/dist` can
 > be pushed to Cloudflare Pages instead.
 
+## MCP server (AI-agent access)
+
+`mcp_server/` exposes the API as a [Model Context Protocol](https://modelcontextprotocol.io)
+server so AI agents (Claude Desktop/Code, Cursor, …) can discover and call the
+endpoints directly — the agent-era discovery channel alongside the REST API.
+
+**Tools:** `get_holidays`, `check_holiday`, `add_business_days`,
+`count_business_days`, `list_real_estate_regions`, `get_real_estate_transactions`.
+
+Each user supplies **their own** API key (from the RapidAPI listing) via
+`KDS_API_KEY`. Run over stdio:
+
+```bash
+KDS_API_KEY=<your key> uv run --directory /path/to/korea-data-suite python -m mcp_server.server
+```
+
+Add to an MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "korea-data-suite": {
+      "command": "uv",
+      "args": ["run", "--directory", "/absolute/path/to/korea-data-suite",
+               "python", "-m", "mcp_server.server"],
+      "env": {
+        "KDS_API_KEY": "your-rapidapi-key",
+        "KDS_API_BASE": "https://api.korea-data.cloud"
+      }
+    }
+  }
+}
+```
+
+Or with Claude Code:
+
+```bash
+claude mcp add korea-data-suite --env KDS_API_KEY=<key> \
+  -- uv run --directory /path/to/korea-data-suite python -m mcp_server.server
+```
+
+Config env: `KDS_API_BASE` (default `https://api.korea-data.cloud`), `KDS_API_KEY`.
+
 ## License
 
 MIT © choiyounggi
