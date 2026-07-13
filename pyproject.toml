@@ -14,7 +14,16 @@ dependencies = [
     "mcp>=1.2",
 ]
 
+keywords = ["mcp", "korea", "real-estate", "molit", "holidays", "public-data", "api"]
+
+[project.urls]
+Homepage = "https://api.korea-data.cloud"
+Repository = "https://github.com/choiyounggi/korea-data-suite"
+
 [project.scripts]
+# both names run the MCP server: korea-data-suite matches the PyPI identifier so
+# `uvx korea-data-suite` works; korea-data-mcp is the descriptive alias.
+korea-data-suite = "mcp_server.server:main"
 korea-data-mcp = "mcp_server.server:main"
 
 [dependency-groups]

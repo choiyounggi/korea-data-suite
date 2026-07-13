@@ -1,5 +1,7 @@
 # Korea Data Suite
 
+<!-- mcp-name: io.github.choiyounggi/korea-data-suite -->
+
 Clean, developer-friendly REST APIs for Korean public data.
 Korean government open data is powerful but hard to consume — Korean-only docs,
 XML responses, legacy auth. This suite normalizes it into simple JSON APIs.
@@ -227,10 +229,10 @@ endpoints directly — the agent-era discovery channel alongside the REST API.
 `count_business_days`, `list_real_estate_regions`, `get_real_estate_transactions`.
 
 Each user supplies **their own** API key (from the RapidAPI listing) via
-`KDS_API_KEY`. Run over stdio:
+`KDS_API_KEY`. Install + run straight from this public repo with `uvx` — no clone:
 
 ```bash
-KDS_API_KEY=<your key> uv run --directory /path/to/korea-data-suite python -m mcp_server.server
+KDS_API_KEY=<your key> uvx --from git+https://github.com/choiyounggi/korea-data-suite korea-data-mcp
 ```
 
 Add to an MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
@@ -239,9 +241,8 @@ Add to an MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
 {
   "mcpServers": {
     "korea-data-suite": {
-      "command": "uv",
-      "args": ["run", "--directory", "/absolute/path/to/korea-data-suite",
-               "python", "-m", "mcp_server.server"],
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/choiyounggi/korea-data-suite", "korea-data-mcp"],
       "env": {
         "KDS_API_KEY": "your-rapidapi-key",
         "KDS_API_BASE": "https://api.korea-data.cloud"
@@ -255,10 +256,13 @@ Or with Claude Code:
 
 ```bash
 claude mcp add korea-data-suite --env KDS_API_KEY=<key> \
-  -- uv run --directory /path/to/korea-data-suite python -m mcp_server.server
+  -- uvx --from git+https://github.com/choiyounggi/korea-data-suite korea-data-mcp
 ```
 
-Config env: `KDS_API_BASE` (default `https://api.korea-data.cloud`), `KDS_API_KEY`.
+Once published to PyPI, this shortens to `uvx korea-data-suite`. Config env:
+`KDS_API_KEY` (required), `KDS_API_BASE` (default `https://api.korea-data.cloud`).
+This server is described by [`server.json`](./server.json) for the
+[MCP Registry](https://registry.modelcontextprotocol.io/).
 
 ## License
 

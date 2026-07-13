@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.choiyounggi/korea-data-suite",
+  "title": "Korea Data Suite",
+  "description": "Korean public data as MCP tools — public holidays & business-day math, and normalized MOLIT real-estate transactions (apartment/officetel/land).",
+  "repository": {
+    "url": "https://github.com/choiyounggi/korea-data-suite",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "korea-data-suite",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "KDS_API_KEY",
+          "description": "Your Korea Data Suite API key (subscribe on the RapidAPI listing).",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "KDS_API_BASE",
+          "description": "API origin (default https://api.korea-data.cloud).",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
