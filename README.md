@@ -165,29 +165,33 @@ Config is env-driven so the same generator works for any domain (put these in
 
 | Env | Meaning |
 |-----|---------|
-| `KDS_SITE_URL` | canonical/sitemap base, e.g. `https://data.yourdomain.com` |
-| `KDS_API_ORIGIN` | origin shown in the on-page `curl` examples, e.g. `https://api.yourdomain.com` |
+| `KDS_SITE_URL` | canonical/sitemap base, e.g. `https://korea-data.cloud` |
+| `KDS_API_ORIGIN` | origin shown in the on-page `curl` examples, e.g. `https://api.korea-data.cloud` |
 | `KDS_CTA_URL` | signup call-to-action (RapidAPI / Zyla / Postman listing) |
-| `KDS_PAGES_PROJECT` | Cloudflare Pages project name (default `kds-site`) |
+| `KDS_SITE_DIR` | output dir the app serves (default `site/dist`) |
 
-### Deploy (Cloudflare Pages)
+### Serving — the API app serves it
 
-Hosting on Cloudflare **Pages** (not the API tunnel) keeps the site always-on at
-the CDN edge — it stays up even when this machine sleeps, which the tunnel-served
-API does not. The daily publish job just runs on the machine; CF hosts the result.
+The FastAPI app serves `site/dist` at **all non-API paths** (`app.mount("/")`),
+while `/v1/*` stays the JSON API. The two get different response headers: the API
+keeps its locked-down `default-src 'none'` CSP + `no-store`; the site gets an
+HTML-renderable CSP (`script-src 'none'`, inline styles allowed) + `public` cache.
+Files are read from disk per request, so **regenerating the site goes live with no
+app restart** — only a code change needs a restart.
+
+One-time on the serving host:
 
 ```bash
-# one-time
-cp deploy/site.env.example deploy/site.env   # then fill in your domain + CTA
-wrangler login                                # browser auth, once
-wrangler pages project create kds-site        # or reuse an existing project
-
-# regenerate from the current DB + deploy
-scripts/publish_site.sh
+cp deploy/site.env.example deploy/site.env    # fill in domain + CTA
+uv run python scripts/gen_site.py --out site/dist   # generate once
+# restart the API app so this integration (new code) takes effect
+# route the root domain to the same app in your Cloudflare Tunnel ingress, e.g.:
+#   - hostname: korea-data.cloud
+#     service: http://127.0.0.1:8642      # same app that serves api.korea-data.cloud
+# then `cloudflared tunnel route dns <tunnel> korea-data.cloud`
 ```
 
-Then point your domain/subdomain at the Pages project in the Cloudflare dashboard,
-and submit `https://<your-site>/sitemap.xml` once in Google Search Console.
+Submit `https://korea-data.cloud/sitemap.xml` once in Google Search Console.
 
 > First run needs history: the daily sync only ingests the current month. To give
 > pages real depth, backfill once —
@@ -195,14 +199,20 @@ and submit `https://<your-site>/sitemap.xml` once in Google Search Console.
 
 ### Automate (macOS daemon)
 
-`deploy/com.choiyounggi.kds-site.plist` rebuilds + redeploys the site daily at
-04:30 (right after the 04:00 sync), so pages track the freshest data hands-off:
+`deploy/com.choiyounggi.kds-site.plist` regenerates the site daily at 04:30 (right
+after the 04:00 sync) via `scripts/publish_site.sh`. Because the app serves from
+disk, the refreshed pages are live immediately — no restart, no external deploy:
 
 ```bash
 cp deploy/com.choiyounggi.kds-site.plist ~/Library/LaunchAgents/
 launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.choiyounggi.kds-site.plist
 tail -f ~/Library/Logs/kds/site.out.log
 ```
+
+> Uptime note: since the site is served by the local app (not a CDN), its SEO
+> availability tracks the machine — keep it awake for serving (`pmset`, as the API
+> already requires). If always-on hosting is wanted later, the same `site/dist` can
+> be pushed to Cloudflare Pages instead.
 
 ## License
 

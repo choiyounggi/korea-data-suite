@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     data_go_kr_key: str = ""
     enable_scheduler: bool = True
     enable_docs: bool = False  # secure-by-default: no /docs /redoc /openapi.json at the origin
+    site_dir: str = "site/dist"  # generated SEO static site; served at non-API paths if present
 
     @property
     def allowed_keys(self) -> frozenset[str]:
