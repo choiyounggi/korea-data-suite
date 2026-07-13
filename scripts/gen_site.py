@@ -523,7 +523,18 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Generate the SEO static site from the DB.")
     p.add_argument("--db", default=os.environ.get("KDS_DB_PATH", "data/kds.db"))
     p.add_argument("--out", default="site/dist")
+    p.add_argument("--allow-placeholder", action="store_true",
+                   help="allow the placeholder .example domain (throwaway local preview only)")
     args = p.parse_args(argv)
+    # Safety: a bare run (no KDS_SITE_URL/KDS_API_ORIGIN) would write pages full of
+    # https://YOUR-DOMAIN.example links. Since the app serves site/dist live, that
+    # silently clobbers the production site with dead links. Refuse unless opted in.
+    if not args.allow_placeholder and (SITE_URL.endswith(".example") or API_ORIGIN.endswith(".example")):
+        print("error: KDS_SITE_URL / KDS_API_ORIGIN are unset (placeholder '.example'). "
+              "Refusing to write — this would overwrite the live site with dead links. "
+              "Set the env vars, or pass --allow-placeholder for a throwaway preview.",
+              file=sys.stderr)
+        return 2
     if not Path(args.db).exists():
         print(f"error: db not found: {args.db}", file=sys.stderr)
         return 2

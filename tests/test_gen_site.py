@@ -114,6 +114,23 @@ def test_region_page_has_seo_essentials(tmp_path, monkeypatch):
 
 
 # ── build(): sitemap excludes skipped regions ──
+def test_main_refuses_placeholder_domain(tmp_path, monkeypatch):
+    # a bare run (no KDS_SITE_URL) must NOT clobber the live site with .example links
+    conn, db_path = _db(tmp_path)
+    _seed_sales(conn, GANGNAM, 40)
+    conn.close()
+    monkeypatch.setattr(gen_site, "SITE_URL", "https://YOUR-DOMAIN.example")
+    monkeypatch.setattr(gen_site, "API_ORIGIN", "https://api.YOUR-DOMAIN.example")
+    out = tmp_path / "dist"
+
+    rc = gen_site.main(["--db", db_path, "--out", str(out)])
+    assert rc == 2            # refused
+    assert not out.exists()   # nothing written
+
+    rc2 = gen_site.main(["--db", db_path, "--out", str(out), "--allow-placeholder"])
+    assert rc2 == 0 and out.exists()  # escape hatch proceeds
+
+
 def test_build_excludes_skipped_region_from_sitemap(tmp_path, monkeypatch):
     monkeypatch.setattr(gen_site, "SITE_URL", "https://data.test")
     conn, db_path = _db(tmp_path)
