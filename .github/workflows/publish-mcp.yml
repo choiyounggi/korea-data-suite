@@ -1,0 +1,51 @@
+name: Publish MCP server (PyPI + MCP Registry)
+
+# Push a version tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) to publish
+# packages/korea-data-mcp to PyPI (trusted publishing — no token) and to the
+# official MCP Registry (GitHub OIDC — no interactive login). The tag drives the
+# version for both pyproject.toml and server.json.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC — for PyPI trusted publishing AND MCP Registry auth
+      contents: read
+    defaults:
+      run:
+        working-directory: packages/korea-data-mcp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          sed -i "s/^version = .*/version = \"$VERSION\"/" pyproject.toml
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp
+          mv server.tmp server.json
+          echo "Publishing version $VERSION"
+
+      - name: Test
+        run: uv run --group dev pytest -q
+
+      - name: Build
+        run: uv build
+
+      - name: Publish to PyPI (trusted publishing)
+        run: uv publish --trusted-publishing automatic
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish
