@@ -14,10 +14,22 @@ dependencies = [
     "mcp>=1.2",
 ]
 
+[project.scripts]
+korea-data-mcp = "mcp_server.server:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Only the MCP server is a distributable package (installable via uvx/pip so agents
+# can add it). The API app / scripts run from source and are excluded from the wheel.
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_server"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
