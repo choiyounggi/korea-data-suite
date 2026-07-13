@@ -4,15 +4,10 @@ Covers tool→endpoint routing, and _get()'s JSON parsing, None-param stripping
 (boundary), and clear error raising on HTTP failure (error case) — using an
 httpx MockTransport so no network is touched.
 """
-import sys
-from pathlib import Path
-
 import httpx
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from mcp_server import server  # noqa: E402
+from korea_data_mcp import server
 
 _REAL_HTTPX_CLIENT = httpx.Client  # captured before any monkeypatch of httpx.Client
 

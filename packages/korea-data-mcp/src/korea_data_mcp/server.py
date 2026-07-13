@@ -6,7 +6,7 @@ endpoints — public holidays, business-day math, and MOLIT real-estate transact
 — directly, without hand-writing HTTP calls.
 
 Run (stdio):
-    KDS_API_KEY=<your key> uv run python -m mcp_server.server
+    KDS_API_KEY=<your key> uvx korea-data-mcp
 
 Config (env):
     KDS_API_BASE   API origin (default https://api.korea-data.cloud)

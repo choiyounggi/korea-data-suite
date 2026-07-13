@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.choiyounggi/korea-data-suite",
+  "name": "io.github.choiyounggi/korea-data-mcp",
   "title": "Korea Data Suite",
   "description": "Korean public data as MCP tools — public holidays & business-day math, and normalized MOLIT real-estate transactions (apartment/officetel/land).",
   "repository": {
@@ -11,7 +11,7 @@
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "korea-data-suite",
+      "identifier": "korea-data-mcp",
       "version": "0.1.0",
       "transport": {
         "type": "stdio"

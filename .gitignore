@@ -26,3 +26,7 @@ __pycache__/
 
 # local agent scratch
 .claude/
+
+# build artifacts
+dist/
+*.egg-info/

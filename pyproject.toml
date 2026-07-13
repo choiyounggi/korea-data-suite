@@ -11,34 +11,19 @@ dependencies = [
     "httpx>=0.27",
     "apscheduler>=3.10,<4",
     "pydantic-settings>=2.4",
-    "mcp>=1.2",
 ]
 
-keywords = ["mcp", "korea", "real-estate", "molit", "holidays", "public-data", "api"]
-
-[project.urls]
-Homepage = "https://api.korea-data.cloud"
-Repository = "https://github.com/choiyounggi/korea-data-suite"
-
-[project.scripts]
-# both names run the MCP server: korea-data-suite matches the PyPI identifier so
-# `uvx korea-data-suite` works; korea-data-mcp is the descriptive alias.
-korea-data-suite = "mcp_server.server:main"
-korea-data-mcp = "mcp_server.server:main"
+# The distributable MCP server lives in packages/korea-data-mcp (its own package,
+# minimal deps). It is intentionally NOT a workspace member — build/publish it from
+# that directory. This root project is the API app and runs from source.
+[tool.uv.workspace]
+members = []
+exclude = ["packages/*"]
 
 [dependency-groups]
 dev = [
     "pytest>=8.0",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-# Only the MCP server is a distributable package (installable via uvx/pip so agents
-# can add it). The API app / scripts run from source and are excluded from the wheel.
-[tool.hatch.build.targets.wheel]
-packages = ["mcp_server"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
