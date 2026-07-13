@@ -34,6 +34,10 @@ RECENT_SAMPLE = 8  # transactions shown in the "recent deals" table
 SITE_URL = os.environ.get("KDS_SITE_URL", "https://YOUR-DOMAIN.example").rstrip("/")
 CTA_URL = os.environ.get("KDS_CTA_URL", "https://rapidapi.com/")
 API_ORIGIN = os.environ.get("KDS_API_ORIGIN", "https://api.YOUR-DOMAIN.example").rstrip("/")
+# Google Search Console HTML-tag verification token (the `content` value). When
+# set, injected into every page's <head> so GSC can verify site ownership without
+# DNS. Empty = nothing injected.
+GSC_VERIFICATION = os.environ.get("KDS_GSC_VERIFICATION", "").strip()
 
 
 # ─────────────────────────── formatting helpers ───────────────────────────
@@ -157,12 +161,14 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin
 
 def page(title: str, desc: str, canonical: str, body: str, jsonld: list[str]) -> str:
     ld = "\n".join(f'<script type="application/ld+json">{j}</script>' for j in jsonld)
+    gsc = (f'<meta name="google-site-verification" content="{esc(GSC_VERIFICATION)}">\n'
+           if GSC_VERIFICATION else "")
     return f"""<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{esc(title)}</title>
+{gsc}<title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">
 <link rel="canonical" href="{esc(canonical)}">
 <meta property="og:title" content="{esc(title)}">

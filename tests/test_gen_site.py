@@ -81,6 +81,20 @@ def test_gate_passes_and_aggregates(tmp_path):
 
 
 # ── rendered page carries SEO essentials ──
+def test_gsc_verification_meta_toggles(tmp_path, monkeypatch):
+    conn, _ = _db(tmp_path)
+    _seed_sales(conn, GANGNAM, 40)
+    conn.row_factory = sqlite3.Row
+    agg = gen_site.aggregate_region(conn, GANGNAM)
+
+    monkeypatch.setattr(gen_site, "GSC_VERIFICATION", "")   # boundary: unset → absent
+    assert "google-site-verification" not in gen_site.render_region(agg)
+
+    monkeypatch.setattr(gen_site, "GSC_VERIFICATION", "tok-abc123")
+    html = gen_site.render_region(agg)
+    assert '<meta name="google-site-verification" content="tok-abc123">' in html
+
+
 def test_region_page_has_seo_essentials(tmp_path, monkeypatch):
     monkeypatch.setattr(gen_site, "SITE_URL", "https://data.test")
     conn, _ = _db(tmp_path)
