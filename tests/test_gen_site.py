@@ -105,6 +105,8 @@ def test_build_excludes_skipped_region_from_sitemap(tmp_path, monkeypatch):
     result = gen_site.build(db_path, str(out))
 
     sitemap = (out / "sitemap.xml").read_text(encoding="utf-8")
+    # correct protocol namespace (sitemaps.org, plural) — GSC rejects a wrong one
+    assert 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' in sitemap
     assert "/realestate/11680-" in sitemap                # generated
     assert "/realestate/11110-" not in sitemap            # skipped
     assert result["regions"] == 1
