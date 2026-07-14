@@ -1,5 +1,7 @@
 # Korea Data Suite
 
+**English** | [한국어](README.ko.md)
+
 Clean, developer-friendly REST APIs for Korean public data.
 Korean government open data is powerful but hard to consume — Korean-only docs,
 XML responses, legacy auth. This suite normalizes it into simple JSON APIs.
