@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.choiyounggi/korea-data-mcp",
   "title": "Korea Data Suite",
-  "description": "Korean public data as MCP tools — public holidays & business-day math, and normalized MOLIT real-estate transactions (apartment/officetel/land).",
+  "description": "Korean public holidays, business-day math, and MOLIT real-estate transactions as MCP tools.",
   "repository": {
     "url": "https://github.com/choiyounggi/korea-data-suite",
     "source": "github"
