@@ -6,6 +6,8 @@ Clean, developer-friendly REST APIs for Korean public data.
 Korean government open data is powerful but hard to consume — Korean-only docs,
 XML responses, legacy auth. This suite normalizes it into simple JSON APIs.
 
+**▶ [Try it on RapidAPI](https://rapidapi.com/dch0202/api/korea-real-estate-holidays) — free tier, no setup.** Hosted and auto-updated; same code as this repo. For AI agents, it's on the [MCP Registry](https://modelcontextprotocol.io) — `uvx korea-data-mcp`.
+
 ## APIs
 
 | API | Status | Description |
@@ -15,7 +17,21 @@ XML responses, legacy auth. This suite normalizes it into simple JSON APIs.
 | Address Toolkit | 🚧 planned | Road/lot address conversion, romanization |
 | Business Registration | 🚧 planned | BRN validation & enrichment |
 
-## Quick start (self-host)
+## Get started
+
+**Hosted (recommended)** — a maintained instance with a **free tier** and no setup:
+
+→ **[Subscribe on RapidAPI](https://rapidapi.com/dch0202/api/korea-real-estate-holidays)**, grab your key, and call any endpoint. RapidAPI injects the key for you — copy a ready-made snippet from its Code Snippets panel.
+
+| | RapidAPI (hosted) | Self-host |
+|---|---|---|
+| Setup | API key in seconds | data.go.kr key + server + cron |
+| Data refresh | automatic (we run the sync) | you manage the scheduler |
+| Cost | free tier, then paid | free (your own infra) |
+
+Both run the **exact same code** (this repo). Pick RapidAPI if you'd rather not operate data pipelines; self-host if you want full control.
+
+### Self-host
 
 ```bash
 uv sync
