@@ -1,0 +1,24 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required: ["kdsApiKey"]
+    properties:
+      kdsApiKey:
+        type: string
+        title: RapidAPI Key
+        description: RapidAPI key (free tier available). Sent as KDS_API_KEY.
+      kdsApiBase:
+        type: string
+        title: API Base URL
+        default: https://api.korea-data.cloud
+        description: API origin. Leave default unless self-hosting.
+  commandFunction: |
+    (config) => ({
+      command: 'uvx',
+      args: ['korea-data-mcp'],
+      env: {
+        KDS_API_KEY: config.kdsApiKey,
+        KDS_API_BASE: config.kdsApiBase || 'https://api.korea-data.cloud'
+      }
+    })
