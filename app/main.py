@@ -1,8 +1,9 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 
 from app.apis.holidays import store
@@ -105,11 +106,31 @@ async def unhandled_error(request: Request, exc: Exception) -> JSONResponse:
     )
 
 
-app.include_router(holidays_router, dependencies=[Depends(require_api_key)])
-app.include_router(realestate_router, dependencies=[Depends(require_api_key)])
+def _allow_head(router: APIRouter) -> APIRouter:
+    """Mirror every GET route in `router` onto HEAD.
+
+    Starlette's Route adds HEAD wherever GET is allowed; FastAPI's APIRoute does
+    not. That gap stays invisible until something is mounted at "/": an unmatched
+    HEAD then stops being a 405 and instead falls through to the StaticFiles mount
+    below, which looks for a *file* named e.g. "v1/holidays" and answers 404.
+    Uptime monitors probing with HEAD read that as the endpoint having vanished,
+    while GET keeps returning 200 — so restore Starlette's default.
+
+    Must run before include_router(): FastAPI wraps the router in an internal
+    _IncludedRouter afterwards and caches its route candidates, so mutating the
+    routes post-include would not take effect.
+    """
+    for route in router.routes:
+        if isinstance(route, APIRoute) and "GET" in route.methods:
+            route.methods = route.methods | {"HEAD"}
+    return router
 
 
-@app.get("/v1/health", tags=["health"])
+app.include_router(_allow_head(holidays_router), dependencies=[Depends(require_api_key)])
+app.include_router(_allow_head(realestate_router), dependencies=[Depends(require_api_key)])
+
+
+@app.api_route("/v1/health", methods=["GET", "HEAD"], tags=["health"])
 def health() -> dict[str, str]:
     return {"status": "ok", "version": APP_VERSION}
 
