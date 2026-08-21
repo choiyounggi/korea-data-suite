@@ -177,33 +177,72 @@ def aggregate_region(conn, code: str) -> dict | None:
 
 # ─────────────────────────── HTML rendering ───────────────────────────
 _CSS = """
-:root{--bg:#fff;--fg:#1a1d24;--muted:#5c6470;--line:#e6e8ec;--accent:#2b6cff;--code:#f5f7fa}
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;font:16px/1.65 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",Segoe UI,Roboto,sans-serif;color:var(--fg);background:var(--bg)}
+:root{
+--paper:oklch(97.8% 0.004 250);--surface:oklch(95.5% 0.006 250);
+--ink:oklch(22% 0.02 255);--muted:oklch(46% 0.014 255);--line:oklch(89% 0.006 250);
+--accent:oklch(47% 0.17 265);--accent-ink:oklch(98% 0.01 265);
+--up:oklch(52% 0.17 25);--down:oklch(47% 0.17 265);
+--radius:12px;--radius-pill:999px;
+--shadow:0 16px 32px -12px oklch(22% 0.02 255 / .22);
+--gutter:clamp(16px,4vw,20px);
+--font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Malgun Gothic","Segoe UI",sans-serif
+}
+*{box-sizing:border-box}
+html,body{overflow-x:clip}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.6 var(--font);color:var(--ink);background:var(--paper)}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
-header,main,footer{max-width:880px;margin:0 auto;padding:0 20px}
-header{display:flex;align-items:center;justify-content:space-between;height:64px;border-bottom:1px solid var(--line)}
-header .brand{font-weight:700;font-size:18px;color:var(--fg)}
-.cta{display:inline-block;background:var(--accent);color:#fff;padding:10px 18px;border-radius:8px;font-weight:600}
-.cta:hover{text-decoration:none;opacity:.92}
-h1{font-size:30px;line-height:1.25;margin:32px 0 8px}h2{font-size:22px;margin:36px 0 12px}
-.lede{color:var(--muted);font-size:18px;margin:0 0 8px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:24px 0}
-.stat{border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-.stat .k{color:var(--muted);font-size:13px}.stat .v{font-size:22px;font-weight:700;margin-top:2px}
-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
-th{color:var(--muted);font-weight:600}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;max-width:960px;margin:0 auto;padding:22px var(--gutter)}
+.wordmark{font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--ink)}
+.cta{display:inline-block;background:var(--accent);color:var(--accent-ink);padding:12px 22px;border-radius:var(--radius-pill);font-weight:700;font-size:14px;box-shadow:var(--shadow)}
+.cta:hover{opacity:.92;text-decoration:none}
+main{max-width:960px;margin:0 auto;padding:0 var(--gutter) 48px}
+h1{font-size:clamp(30px,5vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px}
+h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin:0 0 14px}
+h3{font-size:15px;font-weight:700;margin:0 0 4px}
+.lede{color:var(--muted);font-size:17px;line-height:1.6;margin:0 0 22px;max-width:620px}
+.panel{background:var(--surface);border-radius:var(--radius);padding:clamp(20px,4vw,32px);margin:20px 0}
+.panel-hero{box-shadow:var(--shadow)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:0}
+.stat-cell{padding:16px 22px;border-left:1px solid var(--line)}
+.stat-cell:first-child{border-left:none;padding-left:0}
+.stat-cell .k{font-size:13px;font-weight:400;color:var(--muted)}
+.stat-cell .v{font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.stat-value{font-size:clamp(30px,5vw,38px);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.1}
+.stat-label{font-size:13px;font-weight:400;color:var(--muted);margin-top:4px}
+.delta{font-size:14px;color:var(--muted);margin:14px 0 0}
+.delta .up{color:var(--up);font-weight:700}.delta .down{color:var(--down);font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;border-bottom:2px solid var(--line)}
+td{padding:12px;border-bottom:1px solid var(--line)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .wrap{overflow-x:auto}
-pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto;font-size:13px;line-height:1.5}
+pre{background:var(--surface);border-radius:var(--radius);padding:18px;overflow-x:auto;font-size:13px;line-height:1.5;margin:0 0 20px}
 code{font-family:"SF Mono",Menlo,Consolas,monospace}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:16px 0}
-.card{border:1px solid var(--line);border-radius:10px;padding:14px}.card .c{color:var(--muted);font-size:13px}
-footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:56px;padding-top:24px;padding-bottom:48px}
-.faq h3{font-size:16px;margin:18px 0 4px}.faq p{margin:0 0 8px;color:var(--muted)}
-.chg{color:var(--muted);font-size:14px;margin:-4px 0 12px}
-.chg .up{color:#c0392b;font-weight:600}.chg .down{color:#1e6fdb;font-weight:600}
-svg.chart{max-width:100%;height:auto;display:block}
+.product-line{padding:22px 0;border-top:1px solid var(--line)}
+.product-line:first-child{padding-top:0;border-top:none}
+.product-line p{color:var(--muted);margin:0 0 12px;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;flex-direction:column;padding:10px 14px;border-radius:10px;background:var(--paper);border:1px solid var(--line);color:var(--ink);font-size:13px;min-width:118px}
+.chip:hover{border-color:var(--accent);text-decoration:none}
+.chip .n{font-weight:700}
+.chip .c{color:var(--muted);font-size:12px;margin-top:2px;font-variant-numeric:tabular-nums}
+.checklist{display:grid;gap:10px;margin:0}
+.check-item{display:flex;align-items:baseline;gap:10px;font-size:14px}
+.check-item .mark{color:var(--accent);font-weight:800}
+.faq h3{margin:20px 0 4px}.faq p{margin:0 0 4px;color:var(--muted)}
+.crumb{font-size:13px;color:var(--muted);margin:18px 0}.crumb a{color:var(--muted)}
+svg.chart{max-width:100%;height:auto;display:block;margin:8px 0 4px}
+svg.chart .bar{fill:var(--accent)}
+svg.chart .axis-label{fill:var(--muted);font-size:10px}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:56px;padding:24px var(--gutter) 48px}
+footer .inner{max-width:960px;margin:0 auto}
+@media(max-width:640px){
+.panel{border-radius:8px;margin-inline:calc(-1 * var(--gutter));padding-inline:var(--gutter)}
+.stat-grid{grid-template-columns:1fr}
+.stat-cell{border-left:none;border-top:1px solid var(--line);padding:14px 0}
+.stat-cell:first-child{border-top:none;padding-top:0}
+}
 """
 
 
@@ -222,11 +261,11 @@ def _svg_bars(trend: list[dict]) -> str:
         x = 4 + i * bw
         y = H - pad_b - bh
         parts.append(
-            f'<rect x="{x + bw * 0.16:.1f}" y="{y:.1f}" width="{bw * 0.68:.1f}" '
-            f'height="{bh:.1f}" rx="2" fill="#2b6cff">'
+            f'<rect class="bar" x="{x + bw * 0.16:.1f}" y="{y:.1f}" width="{bw * 0.68:.1f}" '
+            f'height="{bh:.1f}" rx="2">'
             f'<title>{esc(t["ym"])}: {won_short(t["median"])}원 ({t["count"]}건)</title></rect>'
-            f'<text x="{x + bw * 0.5:.1f}" y="{H - pad_b + 15:.1f}" font-size="10" '
-            f'text-anchor="middle" fill="#5c6470">{esc(t["ym"][5:7])}월</text>'
+            f'<text class="axis-label" x="{x + bw * 0.5:.1f}" y="{H - pad_b + 15:.1f}" font-size="10" '
+            f'text-anchor="middle">{esc(t["ym"][5:7])}월</text>'
         )
     return (f'<svg class="chart" viewBox="0 0 {W} {H}" width="100%" role="img" '
             f'aria-label="월별 중위 매매가 추이">{"".join(parts)}</svg>')
@@ -252,16 +291,18 @@ def page(title: str, desc: str, canonical: str, body: str, jsonld: list[str]) ->
 {ld}
 </head>
 <body>
-<header>
-  <a class="brand" href="{esc(SITE_URL)}/">Korea Data Suite</a>
+<header class="topbar">
+  <a class="wordmark" href="{esc(SITE_URL)}/">Korea Data Suite</a>
   <a class="cta" href="{esc(CTA_URL)}" rel="nofollow">API 시작하기</a>
 </header>
 <main>
 {body}
 </main>
 <footer>
-  <p>Korea Data Suite — 한국 공공데이터를 개발자 친화적 JSON REST API로. 데이터 출처: 국토교통부 실거래가, 공공데이터포털.</p>
-  <p><a href="{esc(SITE_URL)}/">홈</a> · <a href="{esc(SITE_URL)}/holidays/">공휴일·영업일 API</a> · <a href="{esc(CTA_URL)}" rel="nofollow">API 구독</a></p>
+  <div class="inner">
+    <p>Korea Data Suite — 한국 공공데이터를 개발자 친화적 JSON REST API로. 데이터 출처: 국토교통부 실거래가, 공공데이터포털.</p>
+    <p><a href="{esc(SITE_URL)}/">홈</a> · <a href="{esc(SITE_URL)}/holidays/">공휴일·영업일 API</a> · <a href="{esc(CTA_URL)}" rel="nofollow">API 구독</a></p>
+  </div>
 </footer>
 </body>
 </html>
@@ -299,10 +340,9 @@ def _jsonld_faq(qas: list[tuple[str, str]]) -> str:
 def render_region(agg: dict) -> str:
     url = f"{SITE_URL}/realestate/{agg['code']}-{agg['slug']}/"
     ko = agg["name_ko"]
-    stat = lambda k, v: f'<div class="stat"><div class="k">{esc(k)}</div><div class="v">{esc(v)}</div></div>'
+    stat = lambda k, v: f'<div class="stat-cell"><div class="k">{esc(k)}</div><div class="v">{esc(v)}</div></div>'
     stats = "".join([
         stat("매매 거래 건수", f"{agg['sale_count']:,}건"),
-        stat("중위 매매가", f"{won_short(agg['median_price'])}원"),
         stat("중위 ㎡당 가격", f"{won_short(agg['median_ppm2'])}원"),
         stat("전세 거래 건수", f"{agg['jeonse_count']:,}건"),
         stat("중위 전세 보증금", f"{won_short(agg['median_deposit'])}원"),
@@ -345,8 +385,7 @@ def render_region(agg: dict) -> str:
 
     chg = " · ".join(x for x in (_chg(agg["mom"], "전월 대비"), _chg(agg["yoy"], "전년 동월 대비")) if x)
     trend_section = (
-        f'<h2>{esc(ko)} 아파트 매매가 추이 (월별 중위가)</h2>'
-        f'<p class="chg">{chg}</p>{chart}' if agg["trend"] else ""
+        f'<h2>{esc(ko)} 아파트 매매가 추이 (월별 중위가)</h2>{chart}' if agg["trend"] else ""
     )
     tier_rows = "".join(
         f"<tr><td>{esc(t['label'])}</td><td class='num'>{t['count']:,}건</td>"
@@ -367,12 +406,18 @@ def render_region(agg: dict) -> str:
         f'<tbody>{bldg_rows}</tbody></table></div>' if agg["buildings"] else ""
     )
     body = f"""
-<nav style="font-size:13px;color:#5c6470;margin-top:20px"><a href="{esc(SITE_URL)}/">홈</a> › <a href="{esc(SITE_URL)}/#realestate">실거래가 API</a> › {esc(ko)}</nav>
+<nav class="crumb"><a href="{esc(SITE_URL)}/">홈</a> › <a href="{esc(SITE_URL)}/#realestate">실거래가 API</a> › {esc(ko)}</nav>
 <h1>{esc(ko)} 아파트 실거래가 API</h1>
 <p class="lede">{esc(ko)}(코드 {agg['code']})의 아파트 매매·전세 실거래 데이터를 정규화된 JSON REST API로 조회하세요.
 최근 매매 {agg['sale_count']:,}건 · 전세 {agg['jeonse_count']:,}건.</p>
-<div class="stats">{stats}</div>
+
+<div class="panel panel-hero">
+<div class="stat-value">{won_short(agg['median_price'])}원</div>
+<div class="stat-label">중위 매매가</div>
+<p class="delta">{chg}</p>
 {trend_section}
+<div class="stat-grid">{stats}</div>
+</div>
 
 <h2>{esc(ko)} 최근 아파트 매매 실거래</h2>
 <div class="wrap"><table>
@@ -425,15 +470,19 @@ def render_holidays(conn) -> str:
          "특정 날짜가 영업일/공휴일인지 확인하는 엔드포인트를 제공합니다."),
     ]
     body = f"""
-<nav style="font-size:13px;color:#5c6470;margin-top:20px"><a href="{esc(SITE_URL)}/">홈</a> › 공휴일·영업일 API</nav>
+<nav class="crumb"><a href="{esc(SITE_URL)}/">홈</a> › 공휴일·영업일 API</nav>
 <h1>대한민국 공휴일·영업일 계산 API</h1>
 <p class="lede">한국 법정공휴일·대체공휴일·임시공휴일·선거일을 JSON으로. 영업일 덧셈/카운트/판별까지 한 API로.
 현재 {yspan} 데이터 제공.</p>
-<div class="stats">
-<div class="stat"><div class="k">제공 연도</div><div class="v">{esc(yspan)}</div></div>
-<div class="stat"><div class="k">대체공휴일</div><div class="v">포함 ✓</div></div>
-<div class="stat"><div class="k">임시공휴일</div><div class="v">포함 ✓</div></div>
-<div class="stat"><div class="k">영업일 계산</div><div class="v">지원 ✓</div></div>
+
+<div class="panel panel-hero">
+<h2>커버리지</h2>
+<div class="checklist">
+<div class="check-item"><span class="mark">✓</span> 제공 연도 {esc(yspan)}</div>
+<div class="check-item"><span class="mark">✓</span> 대체공휴일 포함</div>
+<div class="check-item"><span class="mark">✓</span> 임시공휴일 포함</div>
+<div class="check-item"><span class="mark">✓</span> 영업일 계산 지원</div>
+</div>
 </div>
 
 <h2>2026년 대한민국 공휴일</h2>
@@ -456,21 +505,27 @@ def render_holidays(conn) -> str:
 
 def render_home(aggs: list[dict]) -> str:
     cards = "".join(
-        f'<a class="card" href="{esc(SITE_URL)}/realestate/{a["code"]}-{a["slug"]}/">'
-        f'<div>{esc(a["name_ko"])}</div><div class="c">매매 {a["sale_count"]:,}건 · 중위 {won_short(a["median_price"])}원</div></a>'
+        f'<a class="chip" href="{esc(SITE_URL)}/realestate/{a["code"]}-{a["slug"]}/">'
+        f'<span class="n">{esc(a["name_ko"])}</span><span class="c">매매 {a["sale_count"]:,}건 · 중위 {won_short(a["median_price"])}원</span></a>'
         for a in sorted(aggs, key=lambda x: x["sale_count"], reverse=True)
     )
     body = f"""
-<h1>Korea Data Suite</h1>
-<p class="lede">한국 공공데이터를 개발자 친화적인 JSON REST API로. 한국어 문서·XML·레거시 인증 없이, 깔끔한 JSON 한 번의 호출로.</p>
+<h1>한국 공공데이터를 JSON API로</h1>
+<p class="lede">한국어 문서·XML·레거시 인증 없이, 깔끔한 JSON 한 번의 호출로. 공휴일·영업일부터 아파트 실거래가까지.</p>
 <p><a class="cta" href="{esc(CTA_URL)}" rel="nofollow">API 시작하기 →</a></p>
 
-<h2 id="holidays">공휴일 · 영업일 API</h2>
+<div class="panel panel-hero">
+<h2>데이터 카탈로그</h2>
+<div class="product-line" id="holidays">
+<h3>공휴일 · 영업일 API</h3>
 <p>법정·대체·임시공휴일과 영업일 계산. → <a href="{esc(SITE_URL)}/holidays/">공휴일·영업일 API 보기</a></p>
-
-<h2 id="realestate">실거래가 API — 지역별</h2>
+</div>
+<div class="product-line" id="realestate">
+<h3>실거래가 API — 지역별</h3>
 <p>국토교통부 아파트 매매·전세 실거래를 정규화한 JSON. 전국 시군구 지원, 아래는 데이터가 준비된 지역입니다.</p>
-<div class="grid">{cards}</div>
+<div class="chips">{cards}</div>
+</div>
+</div>
 """
     desc = "한국 공공데이터(공휴일·부동산 실거래가)를 개발자 친화적 JSON REST API로 제공하는 Korea Data Suite."
     import json
