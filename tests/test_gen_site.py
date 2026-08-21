@@ -4,6 +4,7 @@ Covers the data-quality gate (the whole point — no thin pages), SEO essentials
 rendered pages, sitemap exclusion of skipped regions, and the formatting helpers'
 boundary behaviour (empty input, sub-억 values, None).
 """
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -148,3 +149,59 @@ def test_build_excludes_skipped_region_from_sitemap(tmp_path, monkeypatch):
     assert result["regions"] == 1
     assert (out / "holidays" / "index.html").exists()
     assert not (out / "realestate" / "11110-seoul-jongno-gu" / "index.html").exists()
+
+
+# ── D10: CSP-safety, escaping guard, chart-class (fintech redesign) ──
+def test_csp_safety_across_page_types(tmp_path, monkeypatch):
+    # Every <script> tag on any generated page must be non-executable JSON-LD —
+    # script-src 'none' does not restrict application/ld+json elements, but any
+    # other <script> would violate the CSP. No CSS may reach an external URL.
+    monkeypatch.setattr(gen_site, "SITE_URL", "https://data.test")
+    conn, _ = _db(tmp_path)
+    _seed_sales(conn, GANGNAM, 40)
+    conn.row_factory = sqlite3.Row
+    agg = gen_site.aggregate_region(conn, GANGNAM)
+
+    pages = {
+        "home": gen_site.render_home([agg]),
+        "region": gen_site.render_region(agg),
+        "holidays": gen_site.render_holidays(conn),
+    }
+    for name, page_html in pages.items():
+        script_tags = re.findall(r"<script[^>]*>", page_html)
+        assert script_tags, f"{name}: expected at least the JSON-LD script tag(s)"
+        for tag in script_tags:
+            assert 'type="application/ld+json"' in tag, f"{name}: non-JSON-LD script tag {tag!r}"
+        assert "url(http" not in page_html, name
+        assert "@import" not in page_html, name
+        assert '<link rel="stylesheet"' not in page_html, name
+
+
+def test_building_name_escaped_not_raw_html(tmp_path, monkeypatch):
+    monkeypatch.setattr(gen_site, "SITE_URL", "https://data.test")
+    conn, _ = _db(tmp_path)
+    _seed_sales(conn, GANGNAM, 40)
+    # 5 rows on the latest date so this building sorts first in both "recent"
+    # (ORDER BY traded_on DESC) and "buildings" (highest count in top-8).
+    conn.executemany(
+        """INSERT INTO property_transactions
+           (property_type,trade_type,region_code,neighborhood,building_name,traded_on,
+            price_won,deposit_won,monthly_rent_won,area_m2,floor,built_year)
+           VALUES('apartment','sale',?,?,?,?,?,NULL,NULL,?,?,2015)""",
+        [(GANGNAM, "대치동", "<b>x</b>", "2026-07-01", 1_500_000_000, 84.0, 3) for _ in range(5)],
+    )
+    conn.commit()
+    conn.row_factory = sqlite3.Row
+    page_html = gen_site.render_region(gen_site.aggregate_region(conn, GANGNAM))
+    assert "<b>x</b>" not in page_html
+    assert "&lt;b&gt;x&lt;/b&gt;" in page_html
+
+
+def test_svg_bars_uses_classes_not_fill_literals():
+    trend = [{"ym": "2026-01", "median": 1_000_000_000, "count": 5},
+             {"ym": "2026-02", "median": 1_200_000_000, "count": 7}]
+    svg = gen_site._svg_bars(trend)
+    assert 'fill="#' not in svg
+    assert 'class="bar"' in svg
+    assert 'class="axis-label"' in svg
+    assert gen_site._svg_bars([]) == ""  # boundary: no trend data
